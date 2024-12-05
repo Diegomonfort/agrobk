@@ -29,7 +29,7 @@ const authenticateToken = (req, res, next) => {
   };
 
   app.use(cors({
-    origin: 'http://localhost:5173' // Permitir solo tu frontend
+    origin: 'https://agrojardin.vercel.app' // Permitir solo tu frontend
   }));
 
 /* GET DE PRODUCTOS
