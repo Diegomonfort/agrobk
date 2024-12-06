@@ -29,7 +29,7 @@ const authenticateToken = (req, res, next) => {
   };
 
   app.use(cors({
-    origin: 'https://agrojardin.vercel.app' // Permitir solo tu frontend
+    origin: 'http://localhost:5173' // Permitir solo tu frontend
   }));
 
 /* GET DE PRODUCTOS
@@ -127,7 +127,7 @@ app.post('/products', authenticateToken, async (req, res) => {
 
 /* DELETE DE PRODUCTOS
    EMILINA UN PRODUCTO  */
-  app.delete('/products/:id', authenticateToken, async (req, res) => {
+  app.delete('/products/:id', async (req, res) => {
     const { id } = req.params;
   
     try {
