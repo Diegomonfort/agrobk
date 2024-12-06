@@ -28,9 +28,9 @@ const authenticateToken = (req, res, next) => {
     });
   };
 
-  app.use(cors({
+ /*  app.use(cors({
     origin: 'https://agrojardin.vercel.app/' // https://agrojardin.vercel.app/ http://localhost:5173
-  }));
+  })); */
 
 /* GET DE PRODUCTOS
    DEVUELVE TODOS LOS PRODUCTOS  */
