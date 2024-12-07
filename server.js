@@ -28,9 +28,20 @@ const authenticateToken = (req, res, next) => {
     });
   };
 
-  app.use(cors({
-    origin: 'https://agrojardin.vercel.app/' // https://agrojardin.vercel.app/ http://localhost:5173
-  }));
+  const corsOptions = {
+    origin: (origin, callback) => {
+        const allowedOrigins = ['https://agrojardin.vercel.app', 'http://localhost:5173'];
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 
 /* GET DE PRODUCTOS
    DEVUELVE TODOS LOS PRODUCTOS  */
