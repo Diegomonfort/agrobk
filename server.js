@@ -182,6 +182,27 @@ app.get('/categories', async (req, res) => {
   });
   
   
+  /* DELETE DE CATEGORIAS
+   EMILINA UNA CATEGORIA  */
+   app.delete('/categories/:id', async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      const { data, error } = await supabase
+        .from('categorias')
+        .delete()
+        .eq('id', id);
+  
+      if (error) {
+        throw error;
+      }
+  
+      res.status(200).json({ message: 'Categoria eliminada correctamente' });
+    } catch (error) {
+      console.error('Error al eliminar el categoria:', error);
+      res.status(500).json({ error: 'Error al eliminar el categoria.' });
+    }
+  });
 
 
 
