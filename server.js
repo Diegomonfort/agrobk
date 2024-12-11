@@ -90,7 +90,7 @@ app.get('/products', async (req, res) => {
 
 /* POST DE PRODUCTOS
    CREA UN PRODUCTO  */
-app.post('/products', authenticateToken, async (req, res) => {
+app.post('/products', async (req, res) => {
     const { name, price, description } = req.body;
   
     if (!name || !price) {
@@ -115,26 +115,47 @@ app.post('/products', authenticateToken, async (req, res) => {
 
 /* PATCH DE PRODUCTOS
    ACTUALIZA UN PRODUCTO  */
-  app.patch('/products/:id', authenticateToken, async (req, res) => {
+   app.patch('/products/:id', async (req, res) => {
     const { id } = req.params;
-    const { name, price, description } = req.body;
-  
+    const {
+        Producto, // nombre del producto
+        Marca,
+        Modelo,
+        Precio,
+        Categoria,
+        IVA,
+        Familia,
+        Subseccion,
+        Descripcion
+    } = req.body;
+
     try {
-      const { data, error } = await supabase
-        .from('productos')
-        .update({ name, price, description })
-        .eq('id', id);
-  
-      if (error) {
-        throw error;
-      }
-  
-      res.status(200).json(data);
+        // Realizar la actualización en la tabla `productos`
+        const { data, error } = await supabase
+            .from('productos')
+            .update({
+                Producto,
+                Marca,
+                Modelo,
+                Precio,
+                Categoria,
+                IVA,
+                Familia,
+                Subseccion,
+                Descripcion
+            })
+            .eq('id', id);
+
+        if (error) {
+            throw error;
+        }
+
+        res.status(200).json({ message: 'Producto actualizado correctamente', data });
     } catch (error) {
-      console.error('Error al actualizar el producto:', error);
-      res.status(500).json({ error: 'Error al actualizar el producto.' });
+        console.error('Error al actualizar el producto:', error);
+        res.status(500).json({ error: 'Error al actualizar el producto.' });
     }
-  });
+});
 
 /* DELETE DE PRODUCTOS
    EMILINA UN PRODUCTO  */
