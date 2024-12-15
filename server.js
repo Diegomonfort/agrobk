@@ -4,7 +4,8 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express(); 
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-
+const multer = require('multer');
+const upload = multer();
 
 app.use(express.json());
 
@@ -115,10 +116,10 @@ app.post('/products', async (req, res) => {
 
 /* PATCH DE PRODUCTOS
    ACTUALIZA UN PRODUCTO  */
-   app.patch('/products/:id', async (req, res) => {
+   app.patch('/products/:id', upload.single('Imagen'), async (req, res) => {
     const { id } = req.params;
     const {
-        Producto, // nombre del producto
+        Producto,
         Marca,
         Modelo,
         Precio,
@@ -129,21 +130,32 @@ app.post('/products', async (req, res) => {
         Descripcion
     } = req.body;
 
+    const newImage = req.file; // Accede a la imagen cargada
+
     try {
-        // Realizar la actualización en la tabla `productos`
+        const updateData = {
+            Producto,
+            Marca,
+            Modelo,
+            Precio,
+            Categoria,
+            IVA,
+            Familia,
+            Subseccion,
+            Descripcion,
+        };
+
+        // Si hay una nueva imagen, maneja su almacenamiento y actualiza el campo en la BD
+        if (newImage) {
+            // Aquí puedes subir la imagen a Supabase, S3 o almacenarla localmente
+            const imagePath = `ruta/donde/guardaste/la/imagen/${newImage.filename}`;
+            updateData.Imagen = imagePath;
+        }
+
+        // Actualiza la tabla `productos`
         const { data, error } = await supabase
             .from('productos')
-            .update({
-                Producto,
-                Marca,
-                Modelo,
-                Precio,
-                Categoria,
-                IVA,
-                Familia,
-                Subseccion,
-                Descripcion
-            })
+            .update(updateData)
             .eq('id', id);
 
         if (error) {
