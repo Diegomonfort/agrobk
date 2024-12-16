@@ -1,4 +1,6 @@
 require('dotenv').config(); 
+const fs = require('fs');
+const path = require('path');
 const express = require('express'); 
 const { createClient } = require('@supabase/supabase-js');
 const app = express(); 
@@ -114,60 +116,104 @@ app.post('/products', async (req, res) => {
     }
   });
 
-/* PATCH DE PRODUCTOS
-   ACTUALIZA UN PRODUCTO  */
-   app.patch('/products/:id', upload.single('Imagen'), async (req, res) => {
+
+
+
+
+
+
+
+
+  const storage = multer.memoryStorage();
+  
+  app.patch('/products/:id', upload.single('Imagen'), async (req, res) => {
     const { id } = req.params;
     const {
         Producto,
-        Marca,
-        Modelo,
         Precio,
-        Categoria,
+        Descripción,
         IVA,
         Familia,
-        Subseccion,
-        Descripcion
+        Subsección,
+        Modelo,
+        Marca,
+        Categoria
     } = req.body;
 
-    const newImage = req.file; // Accede a la imagen cargada
-
     try {
+        // Prepara los datos para la actualización solo con los campos existentes
         const updateData = {
-            Producto,
-            Marca,
-            Modelo,
-            Precio,
-            Categoria,
-            IVA,
-            Familia,
-            Subseccion,
-            Descripcion,
+            ...(Producto && { Producto }),
+            ...(Precio && { Precio: parseFloat(Precio) }),
+            ...(Descripción && { Descripción }),
+            ...(IVA && { IVA: parseFloat(IVA) }),
+            ...(Familia && { Familia }),
+            ...(Subsección && { Subsección }),
+            ...(Modelo && { Modelo }),
+            ...(Marca && { Marca }),
+            ...(Categoria && { Categoria })
         };
 
-        // Si hay una nueva imagen, maneja su almacenamiento y actualiza el campo en la BD
-        if (newImage) {
-            // Aquí puedes subir la imagen a Supabase, S3 o almacenarla localmente
-            const imagePath = `ruta/donde/guardaste/la/imagen/${newImage.filename}`;
-            updateData.Imagen = imagePath;
+        // Verifica que los valores numéricos sean válidos
+        if (updateData.Precio && isNaN(updateData.Precio)) delete updateData.Precio;
+        if (updateData.IVA && isNaN(updateData.IVA)) delete updateData.IVA;
+
+        // Si hay una nueva imagen, súbela a Supabase y agrégala a `updateData`
+        if (req.file) {
+            const fileName = `${Date.now()}-${req.file.originalname}`;
+            const { data: uploadData, error: uploadError } = await supabase
+                .storage
+                .from('fotosProductos')
+                .upload(`productos/${fileName}`, req.file.buffer, {
+                    contentType: req.file.mimetype,
+                    cacheControl: '3600',
+                    upsert: true,
+                });
+
+            if (uploadError) {
+                console.error('Error al subir la imagen:', uploadError.message);
+                return res.status(500).json({ error: 'Error al subir la imagen al bucket.' });
+            }
+
+            // Obtén la URL pública de la imagen
+            const { data: publicUrlData, error: publicUrlError } = supabase
+                .storage
+                .from('fotosProductos')
+                .getPublicUrl(`productos/${fileName}`);
+
+            if (publicUrlError) {
+                console.error('Error al obtener la URL pública:', publicUrlError.message);
+                return res.status(500).json({ error: 'Error al generar la URL pública de la imagen.' });
+            }
+
+            // Agrega la URL de la imagen al objeto de datos a actualizar
+            updateData.Imagen = publicUrlData.publicUrl;
         }
 
-        // Actualiza la tabla `productos`
+        // Actualiza el producto en la base de datos
         const { data, error } = await supabase
             .from('productos')
             .update(updateData)
             .eq('id', id);
 
         if (error) {
-            throw error;
+            console.error('Error al actualizar la base de datos:', error.message);
+            return res.status(500).json({ error: 'Error al actualizar el producto en la base de datos.' });
         }
 
         res.status(200).json({ message: 'Producto actualizado correctamente', data });
     } catch (error) {
-        console.error('Error al actualizar el producto:', error);
+        console.error('Error general:', error.message);
         res.status(500).json({ error: 'Error al actualizar el producto.' });
     }
 });
+
+
+
+
+
+
+
 
 /* DELETE DE PRODUCTOS
    EMILINA UN PRODUCTO  */
