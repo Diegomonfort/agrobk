@@ -146,7 +146,7 @@ app.post('/products', async (req, res) => {
         // Obtén el producto actual de la base de datos
         const { data: currentProduct, error: fetchError } = await supabase
             .from('productos')
-            .select('activo, destacados')
+            .select('*')
             .eq('id', id)
             .single();
 
