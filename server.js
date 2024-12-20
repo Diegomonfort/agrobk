@@ -137,10 +137,24 @@ app.post('/products', async (req, res) => {
         Subsección,
         Modelo,
         Marca,
-        Categoria
+        Categoria,
+        activo,
+        destacados
     } = req.body;
 
     try {
+        // Obtén el producto actual de la base de datos
+        const { data: currentProduct, error: fetchError } = await supabase
+            .from('productos')
+            .select('activo, destacados')
+            .eq('id', id)
+            .single();
+
+        if (fetchError) {
+            console.error('Error al obtener el producto:', fetchError.message);
+            return res.status(404).json({ error: 'Producto no encontrado.' });
+        }
+
         // Prepara los datos para la actualización solo con los campos existentes
         const updateData = {
             ...(Producto && { Producto }),
@@ -151,7 +165,9 @@ app.post('/products', async (req, res) => {
             ...(Subsección && { Subsección }),
             ...(Modelo && { Modelo }),
             ...(Marca && { Marca }),
-            ...(Categoria && { Categoria })
+            ...(Categoria && { Categoria }),
+            ...(activo !== undefined && { activo: !currentProduct.activo }), // Cambia automáticamente
+            ...(destacados !== undefined && { destacados: !currentProduct.destacados }) // Cambia automáticamente
         };
 
         // Verifica que los valores numéricos sean válidos
