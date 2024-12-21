@@ -65,6 +65,23 @@ app.get('/products', async (req, res) => {
   }
 });
 
+app.get('/destacados', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('productos') 
+      .select('*')
+      .eq('destacados', true);
+
+    if (error) {
+      throw error;
+    }
+    res.json(data);
+  } catch (error) {
+    console.error('Error al obtener los productos:', error);
+    res.status(500).json({ error: 'Error al obtener los productos.' });
+  }
+});
+
 
 /* GET DE UN PRODUCTO POR ID 
    DEVUELVE UN PRODUCTO ESPECÍFICO */
