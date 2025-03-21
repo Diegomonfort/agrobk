@@ -238,7 +238,7 @@ const sendEmail = async (req, res) => {
     const apiKey = defaultClient.authentications['api-key'];
     apiKey.apiKey = "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";
 
-    // 4️⃣ Construir el contenido HTML profesional
+    // 4️⃣ Construir el contenido HTsdML profesional
     const htmlContent = `
       <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; color: #333;">
         <div style="text-align: center; padding: 20px; background-color: #f8f9fa;">
