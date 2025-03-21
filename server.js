@@ -31,7 +31,7 @@ const authenticateToken = (req, res, next) => {
     });
   };
 
-  const corsOptions = {
+  /* const corsOptions = {
     origin: (origin, callback) => {
         const allowedOrigins = ['https://agrojardin.vercel.app', 'http://localhost:5173'];
         if (!origin || allowedOrigins.includes(origin)) {
@@ -42,10 +42,10 @@ const authenticateToken = (req, res, next) => {
     },
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-};
+}; */
 
-app.use(cors(corsOptions));
-
+/* app.use(cors(corsOptions));
+ */
 
 app.use('/api', productsRoutes);
 app.use('/api', categoriesRoutes);
