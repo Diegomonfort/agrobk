@@ -96,7 +96,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
           LimitIssuers: ["4", "11"],
           MetaReference: datosPersonales.email,
           OptionalCommerceId: 12285,
-          RedirectUri: "http://localhost:5173/success",
+          RedirectUri: "https://api-14uw.onrender.com/success",
           Type: 0,
         },
         PaymentData: {
