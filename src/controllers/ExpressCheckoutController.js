@@ -236,7 +236,7 @@ const sendEmail = async (req, res) => {
 
     // 3️⃣ Configurar API Key de Brevo
     const apiKey = defaultClient.authentications['api-key'];
-    apiKey.apiKey = process.env.BREVO_API_KEY;
+    apiKey.apiKey = "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";
 
     // 4️⃣ Construir el contenido HTML profesional
     const htmlContent = `
