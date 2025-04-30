@@ -4,7 +4,7 @@ const fs = require('fs');
 const loadPrivateKeyFromPfx = () => {
   try {
     const pfxPath = './certs/agrojardin.pfx';
-    const pfxPassword = 'hGGLJOxE1LDpLGQa15'; // <-- Asegúrate aquí
+    const pfxPassword = 'hGGLJOxE1LDpLGQa15';
 
     const pfxData = fs.readFileSync(pfxPath, 'binary');
     const p12Der = forge.asn1.fromDer(pfxData);

@@ -80,7 +80,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
     console.log("✅ Transacción registrada con ID:", nuevaTransaccion.id);
 
     const privateKey = loadPrivateKeyFromPfx();
-
+    console.log("provate key ", privateKey);
     const innerObject = {
       Client: "agrojardin",
       Request: {
