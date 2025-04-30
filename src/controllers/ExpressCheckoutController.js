@@ -25,12 +25,13 @@ const RecibeInfoExpressCheckout = async (req, res) => {
     if (!datosPersonales || !direccionEnvio || !products || !Array.isArray(products)) {
       return res.status(400).json({ error: "Faltan datos requeridos o la estructura de datos es incorrecta." });
     }
+    const productIds = products.map(p => p.id);
 
     // Consultar los productos en Supabase
     const { data: productos, error } = await supabase
       .from("productos")
       .select("id, Precio, Descripción, Producto")
-      .in("id", products);
+      .in("id", productIds);
 
     if (error) {
       console.error("❌ Error al consultar productos en Supabase:", error);
