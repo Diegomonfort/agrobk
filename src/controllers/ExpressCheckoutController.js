@@ -161,7 +161,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
     const finalPayloadJson = `{"Object":${jsonString},"Signature":"${signature}"}`;
 
     const response = await axios.post(
-      "https://testing.plexo.com.uy:4043/SecurePaymentGateway.svc/ExpressCheckout",
+      "https://plexo.com.uy:4043/SecurePaymentGateway.svc/ExpressCheckout",
       finalPayloadJson,
       { headers: { "Content-Type": "application/json" } }
     );
