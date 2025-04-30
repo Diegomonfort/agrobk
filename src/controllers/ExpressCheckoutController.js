@@ -96,7 +96,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
           LimitBanks: ["113", "137"],
           LimitIssuers: ["4", "11"],
           MetaReference: datosPersonales.email,
-          OptionalCommerceId: 12285,
+          OptionalCommerceId: 45274,
           RedirectUri: "https://agrojardin.vercel.app/success",
           Type: 0,
         },
