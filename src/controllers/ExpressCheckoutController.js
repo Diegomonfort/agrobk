@@ -140,6 +140,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
       UTCUnixTimeExpiration: expirationTime,
     };
 
+    console.log("Lo que envio : ", payloadToSign)
     let jsonString = JSON.stringify(payloadToSign, null, 0).replace(/\s+/g, "");
 
     jsonString = jsonString
