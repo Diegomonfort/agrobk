@@ -111,7 +111,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
           },
           Installments: 1,
           Items: itemsArray,
-          OptionalCommerceId: 12285,
+          OptionalCommerceId: 45274,
           PaymentInstrumentInput: {
             NonStorableItems: {
               CVC: "123",
