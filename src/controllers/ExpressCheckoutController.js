@@ -65,7 +65,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
           nombre_completo: `${direccionEnvio.nombre} ${direccionEnvio.apellido}`,
           productos: products, // Guardar array de IDs de productos
           total: totalCompra, // Guardar el total de la compra
-          estado: "pendiente",
+          estado: 1,
           direccion: direccionEnvio.direccion
         },
       ])
