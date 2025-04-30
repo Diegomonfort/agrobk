@@ -81,7 +81,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
     const privateKey = loadPrivateKeyFromPfx();
 
     const innerObject = {
-      Client: "AgrojardinTest",
+      Client: "agrojardin",
       Request: {
         AuthorizationData: {
           Action: 64,
@@ -130,7 +130,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
       },
     };
 
-    const fingerprint = "579F4609DD4315D890921F47293B0E7CAC6CB290";
+    const fingerprint = "41749F756FAC1A308FFF1407CB600B77DE978C0D";
     const expirationTime = moment().add(1, "hour").valueOf();
 
     const payloadToSign = {
