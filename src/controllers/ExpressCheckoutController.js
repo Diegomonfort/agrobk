@@ -5,6 +5,7 @@ const axios = require("axios");
 const supabase = require("../config/supabase");
 const SibApiV3Sdk = require('sib-api-v3-sdk');
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
+const crypto = require('crypto');
 
 const canonicalize = (obj) => {
   if (typeof obj !== "object" || obj === null) return obj;
@@ -105,7 +106,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
           CurrencyId: 2,
           FinancialInclusion: {
             BilledAmount: parseFloat(itemsArray.reduce((acc, item) => acc + item.Amount, 0).toFixed(2)),
-            InvoiceNumber: -139009869,
+            InvoiceNumber: 9869,
             TaxedAmount: parseFloat(itemsArray.reduce((acc, item) => acc + item.Amount * 0.9, 0).toFixed(1)), // Asumiendo 10% de impuestos
             Type: 1,
           },
@@ -315,7 +316,89 @@ const sendEmail = async (req, res) => {
 };
 
 
+const ConsultaEstadoTransaccion = async (req, res) => {
+  try {
+    const { transaccionId } = req.body;
+
+    if (!transaccionId) {
+      return res.status(400).json({ error: "El ID de la transacción es requerido." });
+    }
+
+    const privateKey = loadPrivateKeyFromPfx();
+    const fingerprint = "41749F756FAC1A308FFF1407CB600B77DE978C0D";
+    const expirationTime = moment().add(1, "hour").valueOf();
+
+    // Objeto de referencia corregido (ahora con "Request")
+    const referenceObject = {
+      Client: "agrojardin",
+      Request: {
+        MetaReference: transaccionId.toString(),
+        Type: 0,
+      },
+    };
+
+    // Payload a firmar con la estructura correcta
+    const payloadToSign = {
+      Object: {
+        Fingerprint: fingerprint,
+        Object: referenceObject, // Anidación correcta
+        UTCUnixTimeExpiration: expirationTime,
+      },
+    };
+
+    let jsonString = JSON.stringify(payloadToSign.Object, null, 0).replace(/\s+/g, "");
+
+    // Firma del JSON
+    const sign = createSign("SHA512");
+    sign.update(jsonString);
+    const signature = sign.sign(
+      {
+        key: privateKey,
+        padding: require("crypto").constants.RSA_PKCS1_PADDING,
+      },
+      "base64"
+    );
+
+    // Construcción del JSON final con la firma
+    const finalPayloadJson = JSON.stringify({
+      Object: JSON.parse(jsonString), // Asegura que el objeto está bien estructurado
+      Signature: signature,
+    });
+
+    console.log(finalPayloadJson);
+
+    const response = await axios.post(
+      "https://pagos.plexo.com.uy:4043/SecurePaymentGateway.svc/Operation/Status",
+      finalPayloadJson,
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    console.log("✅ Respuesta de consulta de estado:", JSON.stringify(response.data, null, 2));
+
+    return res.status(200).json(response.data);
+  } catch (error) {
+    console.error("❌ Error al consultar el estado de la transacción:", error.response?.data || error.message);
+    return res.status(500).json({ error: "Error en la consulta del estado de la transacción." });
+  }
+};
+
+
+const Webhook = async (req, res) => {
+  const secret = '9a8b607019d04d7281c9f6360871ff274ecbf57ad731464984be28448885ddd2'; // Se obtiene de la configuración de la pasarela
+    const signature = req.headers['x-signature']; // Verifica qué header usa la pasarela
+    const hash = crypto.createHmac('sha256', secret)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
+
+    if (hash !== signature) {
+        return res.status(401).send('Firma inválida');
+    }
+
+    console.log('Webhook verificado:', req.body);
+    res.sendStatus(200);
+}
 
 
 
-module.exports = {RecibeInfoExpressCheckout, updateTransaction, sendEmail};
+
+module.exports = {RecibeInfoExpressCheckout, updateTransaction, sendEmail, ConsultaEstadoTransaccion};
