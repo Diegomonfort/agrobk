@@ -105,7 +105,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
           CurrencyId: 2,
           FinancialInclusion: {
             BilledAmount: parseFloat(itemsArray.reduce((acc, item) => acc + item.Amount, 0).toFixed(2)),
-            InvoiceNumber: -1390098693,
+            InvoiceNumber: -139009869,
             TaxedAmount: parseFloat(itemsArray.reduce((acc, item) => acc + item.Amount * 0.9, 0).toFixed(1)), // Asumiendo 10% de impuestos
             Type: 1,
           },
