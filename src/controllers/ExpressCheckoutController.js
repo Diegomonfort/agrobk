@@ -401,4 +401,4 @@ const Webhook = async (req, res) => {
 
 
 
-module.exports = {RecibeInfoExpressCheckout, updateTransaction, sendEmail, ConsultaEstadoTransaccion};
+module.exports = {RecibeInfoExpressCheckout, updateTransaction, sendEmail, ConsultaEstadoTransaccion, Webhook};
