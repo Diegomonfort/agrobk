@@ -226,31 +226,49 @@ const sendEmail = async (req, res) => {
       return res.status(404).json({ error: 'Transacción no encontrada' });
     }
 
-    // 2️⃣ Obtener información de los productos
+    // 2️⃣ Procesar productos
+    let productIds = transaccion.productos;
+
+    // Si es string (ej. JSON guardado como texto), lo parseamos
+    if (typeof productIds === 'string') {
+      productIds = JSON.parse(productIds);
+    }
+
+    // Si es array de objetos, extraemos los IDs
+    if (Array.isArray(productIds) && typeof productIds[0] === 'object') {
+      productIds = productIds.map(p => p.id);
+    }
+
+    // Validar que sea array de números
+    if (!Array.isArray(productIds) || productIds.some(id => typeof id !== 'number')) {
+      return res.status(400).json({ error: 'Formato de productos inválido' });
+    }
+
+    // 3️⃣ Obtener información de los productos
     const { data: productos, error: productosError } = await supabase
-      .from('productos') // Asegúrate que este sea el nombre correcto de tu tabla
+      .from('productos')
       .select('Producto, Precio')
-      .in('id', transaccion.productos);
+      .in('id', productIds);
 
     if (productosError) {
       console.error('Error al obtener productos:', productosError);
       return res.status(500).json({ error: 'Error al obtener información de productos' });
     }
 
-    // 3️⃣ Configurar API Key de Brevo
+    // 4️⃣ Configurar API Key de Brevo
     const apiKey = defaultClient.authentications['api-key'];
     apiKey.apiKey = process.env.BREVO_API_KEY;
 
-    // 4️⃣ Construir el contenido HTsdML profesional
+    // 5️⃣ Construir el contenido HTML del correo
     const htmlContent = `
       <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; color: #333;">
         <div style="text-align: center; padding: 20px; background-color: #f8f9fa;">
           <img src="https://lbezcjvocrhgosfklbgs.supabase.co/storage/v1/object/public/mailimage//logoAgro_Mesa%20de%20trabajo%201.png" alt="Logo Agrojardin" style="max-width: 200px; height: auto;">
         </div>
-        
+
         <div style="padding: 30px; background-color: #ffffff;">
           <h2 style="color: #2d995b; margin-bottom: 25px;">¡Gracias por tu compra, ${transaccion.nombre_completo}!</h2>
-          
+
           <div style="margin-bottom: 25px;">
             <h3 style="color: #2d995b; border-bottom: 2px solid #eee; padding-bottom: 10px;">Detalles de la compra</h3>
             <p><strong>ID de Transacción:</strong> ${transaccion.id}</p>
@@ -292,7 +310,7 @@ const sendEmail = async (req, res) => {
       </div>
     `;
 
-    // 5️⃣ Configurar y enviar el email
+    // 6️⃣ Enviar el email
     const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
     const sendSmtpEmail = {
       sender: {
@@ -308,12 +326,13 @@ const sendEmail = async (req, res) => {
     console.log("Correo enviado:", response);
 
     return res.json({ message: 'Email enviado con éxito' });
-    
+
   } catch (error) {
     console.error("Error al enviar email:", error);
     return res.status(500).json({ error: 'Error al enviar el email' });
   }
 };
+
 
 
 const ConsultaEstadoTransaccion = async (req, res) => {
