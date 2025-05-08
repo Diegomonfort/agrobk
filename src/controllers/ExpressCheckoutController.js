@@ -383,22 +383,79 @@ const ConsultaEstadoTransaccion = async (req, res) => {
 };
 
 
-const Webhook = async (req, res) => {
-  const secret = '9a8b607019d04d7281c9f6360871ff274ecbf57ad731464984be28448885ddd2'; // Se obtiene de la configuración de la pasarela
-    const signature = req.headers['x-signature']; // Verifica qué header usa la pasarela
-    const hash = crypto.createHmac('sha256', secret)
-        .update(JSON.stringify(req.body))
-        .digest('hex');
 
-    if (hash !== signature) {
-        return res.status(401).send('Firma inválida');
+const Callback = async (req, res) => {
+  try {
+    const event = req.body;
+    console.log('Webhook recibido:', JSON.stringify(event, null, 2));
+
+    const transactions = event?.Object?.Object?.Transactions;
+    const clientReferenceId = transactions?.Purchase?.ClientReferenceId;
+    const purchaseStatus = transactions?.Purchase?.Status;
+
+    if (!transactions || !transactions.Purchase || !clientReferenceId) {
+      console.error("Estructura del webhook incorrecta o falta ClientReferenceId");
+      return res.status(400).json({ success: false, message: "Datos inválidos" });
     }
 
-    console.log('Webhook verificado:', req.body);
-    res.sendStatus(200);
-}
+    const estado = purchaseStatus === 0 ? 0 : 1;
+
+    // Buscar y actualizar la transacción en Supabase
+    const { data, error } = await supabase
+      .from('transacciones')
+      .update({ estado })
+      .eq('id', clientReferenceId);
+
+    if (error) {
+      console.error("Error actualizando la transacción:", error);
+      return res.status(500).json({ success: false, message: "No se pudo actualizar el estado" });
+    }
+
+    return res.json({ success: true, updated: data });
+
+  } catch (error) {
+    console.error("Error procesando el webhook:", error);
+    return res.status(500).json({ success: false, message: "Error interno del servidor" });
+  }
+};
+
+
+const verifyPayment = async (req, res) => {
+  const { transaccion_id } = req.query;
+
+  if (!transaccion_id) {
+    return res.status(400).json({ info: false, message: 'Falta transaccion_id' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('transacciones')
+      .select('estado')
+      .eq('id', transaccion_id)
+      .single();
+
+    if (error || !data) {
+      return res.json({ info: false });
+    }
+
+    const estado = data.estado;
+
+    if (estado === 0) {
+      return res.json({ info: true, status: 0 }); // Éxito
+    } else if (estado === 1) {
+      return res.json({ info: true, status: 1 }); // Error
+    } else {
+      return res.json({ info: false }); // Aún en proceso (ej. estado 2)
+    }
+
+  } catch (err) {
+    console.error('Error consultando el estado:', err);
+    return res.status(500).json({ info: false, message: 'Error interno' });
+  }
+};
 
 
 
 
-module.exports = {RecibeInfoExpressCheckout, updateTransaction, sendEmail, ConsultaEstadoTransaccion, Webhook};
+
+module.exports = {RecibeInfoExpressCheckout, updateTransaction, sendEmail, ConsultaEstadoTransaccion, Callback, verifyPayment};
