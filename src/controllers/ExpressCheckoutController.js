@@ -215,7 +215,6 @@ const sendEmail = async (req, res) => {
   }
 
   try {
-    // 1️⃣ Obtener datos de la transacción
     const { data: transaccion, error } = await supabase
       .from('transacciones')
       .select('*')
@@ -226,25 +225,20 @@ const sendEmail = async (req, res) => {
       return res.status(404).json({ error: 'Transacción no encontrada' });
     }
 
-    // 2️⃣ Procesar productos
     let productIds = transaccion.productos;
 
-    // Si es string (ej. JSON guardado como texto), lo parseamos
     if (typeof productIds === 'string') {
       productIds = JSON.parse(productIds);
     }
 
-    // Si es array de objetos, extraemos los IDs
     if (Array.isArray(productIds) && typeof productIds[0] === 'object') {
       productIds = productIds.map(p => p.id);
     }
 
-    // Validar que sea array de números
     if (!Array.isArray(productIds) || productIds.some(id => typeof id !== 'number')) {
       return res.status(400).json({ error: 'Formato de productos inválido' });
     }
 
-    // 3️⃣ Obtener información de los productos
     const { data: productos, error: productosError } = await supabase
       .from('productos')
       .select('Producto, Precio')
@@ -255,11 +249,10 @@ const sendEmail = async (req, res) => {
       return res.status(500).json({ error: 'Error al obtener información de productos' });
     }
 
-    // 4️⃣ Configurar API Key de Brevo
+    // Configurar API Key de Brevo
     const apiKey = defaultClient.authentications['api-key'];
     apiKey.apiKey = process.env.BREVO_API_KEY;
 
-    // 5️⃣ Construir el contenido HTML del correo
     const htmlContent = `
       <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; color: #333;">
         <div style="text-align: center; padding: 20px; background-color: #f8f9fa;">
@@ -309,9 +302,28 @@ const sendEmail = async (req, res) => {
         </div>
       </div>
     `;
+    const internalEmailContent = `
+      <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; color: #333;">
+        <h2 style="color: #2d995b;">Nueva compra realizada</h2>
+        <p><strong>Cliente:</strong> ${transaccion.nombre_completo}</p>
+        <p><strong>Email:</strong> ${transaccion.email}</p>
+        <p><strong>Transacción ID:</strong> ${transaccion.id}</p>
+        <p><strong>Total:</strong> $${transaccion.total} USD</p>
 
-    // 6️⃣ Enviar el email
+        <h3 style="color: #2d995b;">Productos:</h3>
+        <ul>
+          ${productos.map(p => `<li>${p.Producto} - $${p.Precio} USD</li>`).join('')}
+        </ul>
+
+        <h3 style="color: #2d995b;">Datos de envío:</h3>
+        <p>${transaccion.direccion}, ${transaccion.departamento}</p>
+        <p>Código Postal: ${transaccion.codigo_postal}</p>
+        <p>Teléfono: ${transaccion.celular}</p>
+      </div>
+    `;
+
     const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+
     const sendSmtpEmail = {
       sender: {
         name: "Agrojardin",
@@ -322,10 +334,23 @@ const sendEmail = async (req, res) => {
       htmlContent: htmlContent
     };
 
-    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log("Correo enviado:", response);
+    const notificationEmail = {
+      sender: {
+        name: "Agrojardin Notificaciones",
+        email: "noreply@agrojardinmaldonado.com"
+      },
+      to: [{ email: "husqvarnapremiumstore@agrojardinmaldonado.com" }],
+      subject: `Nueva compra realizada - Transacción #${transaccion.id}`,
+      htmlContent: internalEmailContent
+    };
 
-    return res.json({ message: 'Email enviado con éxito' });
+    const responseCliente = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    const responseInterno = await apiInstance.sendTransacEmail(notificationEmail);
+
+    console.log("Correo enviado al cliente:", responseCliente);
+    console.log("Correo interno enviado:", responseInterno);
+
+    return res.json({ message: 'Emails enviados con éxito' });
 
   } catch (error) {
     console.error("Error al enviar email:", error);

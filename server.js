@@ -8,6 +8,7 @@ const cors = require('cors');
 const productsRoutes = require('./src/routes/productsRoutes');
 const categoriesRoutes = require('./src/routes/categoriesRoutes');
 const ExpressCheckoutRoutes = require('./src/routes/ExpressCheckoutRoutes');
+const AuthRoutes = require('./src/routes/AuthRoutes');
 
 
 
@@ -50,6 +51,8 @@ app.use(cors(corsOptions));
 app.use('/api', productsRoutes);
 app.use('/api', categoriesRoutes);
 app.use('/api', ExpressCheckoutRoutes);
+app.use('/api', AuthRoutes);
+
 
 
 const PORT = process.env.PORT || 3000;
