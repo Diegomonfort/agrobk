@@ -32,17 +32,10 @@ const authenticateToken = (req, res, next) => {
     });
   };
 
-  const corsOptions = {
-    origin: (origin, callback) => {
-        const allowedOrigins = ['https://agrojardin.vercel.app', 'http://localhost:5173'];
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('No permitido por CORSSS'));
-        }
-    },
-    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+ const corsOptions = {
+  origin: ['https://agrojardin.vercel.app', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 app.use(cors(corsOptions));
