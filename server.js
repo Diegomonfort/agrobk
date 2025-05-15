@@ -38,7 +38,7 @@ const authenticateToken = (req, res, next) => {
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
-app.use(cors(corsOptions));
+/* app.use(cors(corsOptions)); */
 
 
 app.use('/api', productsRoutes);
