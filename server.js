@@ -32,13 +32,13 @@ const authenticateToken = (req, res, next) => {
     });
   };
 
- const corsOptions = {
-  origin: ['https://agrojardin.vercel.app', 'http://localhost:5173'],
+const corsOptions = {
+  origin: '*', // ⚠️ Solo temporalmente en desarrollo
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
-/* app.use(cors(corsOptions)); */
+app.use(cors(corsOptions));
 
 
 app.use('/api', productsRoutes);
