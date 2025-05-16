@@ -200,8 +200,7 @@ const supabase = require('../config/supabase');
             .from('productos')
             .update({
                 discount: discount,
-                discount_value: discount_value,
-                updated_at: new Date().toISOString()
+                discount_value: discount_value
             })
             .eq('id', id)
             .select()
