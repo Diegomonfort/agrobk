@@ -23,81 +23,78 @@ const RecibeInfoExpressCheckout = async (req, res) => {
   try {
     const { datosPersonales, direccionEnvio, products } = req.body;
 
-    // Validación de datos básica
-    if (!datosPersonales || !direccionEnvio || !products) {
-      return res.status(400).json({ error: "Datos incompletos o estructura incorrecta." });
+    if (!datosPersonales || !direccionEnvio || !products || !Array.isArray(products)) {
+      return res.status(400).json({ error: "Faltan datos requeridos o la estructura de datos es incorrecta." });
     }
-
-    // Obtener IDs de productos y cantidades
     const productIds = products.map(p => p.id);
-    const productQuantities = new Map(products.map(p => [p.id, p.quantity || 1]));
 
-    // Consultar productos con información de descuentos
-    const { data: productos, error: productError } = await supabase
+    // Consultar los productos en Supabase
+    const { data: productos, error } = await supabase
       .from("productos")
-      .select("id, Precio, Producto, discount, discount_value")
+      .select("id, Precio, Descripción, Producto, discount_value, discount")
       .in("id", productIds);
 
-    if (productError || !productos.length) {
-      console.error("Error al obtener productos:", productError);
-      return res.status(400).json({ error: "Error al validar los productos." });
+    if (error) {
+      console.error("❌ Error al consultar productos en Supabase:", error);
+      return res.status(500).json({ error: "Error al obtener información de los productos." });
     }
 
-    // Construir array de items con precios actualizados
-    const itemsArray = productos.map(producto => {
-      const quantity = productQuantities.get(producto.id) || 1;
-      let precio = Number(producto.Precio);
+    if (!productos.length) {
+      return res.status(400).json({ error: "Los productos seleccionados no existen." });
+    }
 
-      // Aplicar descuento si corresponde
-      if (producto.discount && producto.discount_value > 0) {
-        precio = precio * (1 - (producto.discount_value / 100));
-      }
+    // Construcción de los items con la información de Supabase
+   const itemsArray = productos.map((producto) => {
+    let precio = Number(producto.Precio) || 0;
+    
+    if (producto.discount && producto.discount_value) {
+      const descuento = Number(producto.discount_value) / 100;
+      precio = precio * (1 - descuento);
+    console.log("aca", precio)
+    }
 
-      return {
-        Amount: parseFloat(precio.toFixed(2)),
-        ClientItemReferenceId: `Item-${producto.id}`,
-        Name: producto.Producto,
-        Quantity: quantity,
-        OriginalPrice: Number(producto.Precio),
-        Discount: producto.discount_value || 0
-      };
-    });
+    console.log(precio)
 
-    // Calcular totales
-    const totalCompra = itemsArray.reduce((acc, item) => acc + (item.Amount * item.Quantity), 0);
-    const totalImpuestos = parseFloat((totalCompra * 0.9).toFixed(1));
+    return {
+      Amount: parseFloat(precio.toFixed(2)),
+      ClientItemReferenceId: `Item-${producto.id}`,
+      Name: producto.Producto,
+      Quantity: 1,
+    };
+  });
 
-    // Registrar transacción en base de datos
-    const { data: nuevaTransaccion, error: transError } = await supabase
+
+    // 1️⃣ Guardar la transacción en la base de datos con estado "pendiente"
+    const totalCompra = productos.reduce((acc, producto) => acc + producto.Precio, 0);
+
+    // Insertar la transacción en la base de datos con los productos y el total
+    const { data: nuevaTransaccion, error: errorTransaccion } = await supabase
       .from("transacciones")
-      .insert([{
-        departamento: direccionEnvio.ciudad,
-        codigo_postal: direccionEnvio.codigoPostal,
-        email: datosPersonales.email,
-        celular: datosPersonales.telefono,
-        nombre_completo: `${direccionEnvio.nombre} ${direccionEnvio.apellido}`,
-        productos: itemsArray.map(item => ({
-          id: item.ClientItemReferenceId.split('-')[1],
-          precio: item.Amount,
-          cantidad: item.Quantity,
-          descuento: item.Discount
-        })),
-        total: totalCompra,
-        estado: 1,
-        direccion: direccionEnvio.direccion
-      }])
+      .insert([
+        {
+          departamento: direccionEnvio.ciudad,
+          codigo_postal: direccionEnvio.codigoPostal,
+          email: datosPersonales.email,
+          celular: datosPersonales.telefono,
+          nombre_completo: `${direccionEnvio.nombre} ${direccionEnvio.apellido}`,
+          productos: products, // Guardar array de IDs de productos
+          total: totalCompra, // Guardar el total de la compra
+          estado: 1,
+          direccion: direccionEnvio.direccion
+        },
+      ])
       .select("id")
-      .single();
+      .single(); 
 
-    if (transError) {
-      console.error("Error al guardar transacción:", transError);
+    if (errorTransaccion) {
+      console.error("❌ Error al guardar la transacción:", errorTransaccion);
       return res.status(500).json({ error: "Error al registrar la transacción." });
     }
 
-    // Configurar datos para pasarela de pago
-    const privateKey = loadPrivateKeyFromPfx();
-    const expirationTime = moment().add(1, "hour").valueOf();
+    console.log("✅ Transacción registrada con ID:", nuevaTransaccion.id);
 
+    const privateKey = loadPrivateKeyFromPfx();
+    console.log("provate key ", privateKey);
     const innerObject = {
       Client: "agrojardin",
       Request: {
@@ -123,7 +120,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
           FinancialInclusion: {
             BilledAmount: parseFloat(itemsArray.reduce((acc, item) => acc + item.Amount, 0).toFixed(2)),
             InvoiceNumber: 9869,
-            TaxedAmount: parseFloat(itemsArray.reduce((acc, item) => acc + item.Amount * 0.9, 0).toFixed(1)),
+            TaxedAmount: parseFloat(itemsArray.reduce((acc, item) => acc + item.Amount * 0.9, 0).toFixed(1)), // Asumiendo 10% de impuestos
             Type: 1,
           },
           Installments: 1,
@@ -148,51 +145,51 @@ const RecibeInfoExpressCheckout = async (req, res) => {
       },
     };
 
-    // Generar firma digital
     const fingerprint = "41749F756FAC1A308FFF1407CB600B77DE978C0D";
+    const expirationTime = moment().add(1, "hour").valueOf();
+
     const payloadToSign = {
       Fingerprint: fingerprint,
       Object: canonicalize(innerObject),
       UTCUnixTimeExpiration: expirationTime,
     };
 
-    let jsonString = JSON.stringify(payloadToSign, null, 0)
-      .replace(/\s+/g, "")
+    console.log("Lo que envio : ", payloadToSign)
+    let jsonString = JSON.stringify(payloadToSign, null, 0).replace(/\s+/g, "");
+
+    jsonString = jsonString
       .replace(/"BilledAmount":(\d+)(,|})/g, '"BilledAmount":$1.0$2')
       .replace(/"TaxedAmount":(\d+)(,|})/g, '"TaxedAmount":$1.0$2')
       .replace(/"Amount":(\d+)(,|})/g, '"Amount":$1.0$2');
 
-    const sign = crypto.createSign("SHA512");
+    const sign = createSign("SHA512");
     sign.update(jsonString);
-    const signature = sign.sign({
-      key: privateKey,
-      padding: crypto.constants.RSA_PKCS1_PADDING,
-    }, "base64");
+    const signature = sign.sign(
+      {
+        key: privateKey,
+        padding: require("crypto").constants.RSA_PKCS1_PADDING,
+      },
+      "base64"
+    );
 
-    // Enviar a pasarela de pago
-    const finalPayload = `{"Object":${jsonString},"Signature":"${signature}"}`;
+    const finalPayloadJson = `{"Object":${jsonString},"Signature":"${signature}"}`;
+
     const response = await axios.post(
       "https://pagos.plexo.com.uy:4043/SecurePaymentGateway.svc/ExpressCheckout",
-      finalPayload,
+      finalPayloadJson,
       { headers: { "Content-Type": "application/json" } }
     );
 
+    console.log("✅ Respuesta de pasarela:", JSON.stringify(response.data, null, 2));
+
     return res.status(200).json({
       ...response.data,
-      transaccionId: nuevaTransaccion.id,
-      total: totalCompra.toFixed(2)
+      transaccionId: nuevaTransaccion.id, // Enviamos el ID para referencia futura
     });
 
   } catch (error) {
-    console.error("Error en proceso de pago:", {
-      message: error.message,
-      stack: error.stack,
-      response: error.response?.data
-    });
-    return res.status(500).json({
-      error: "Error en el procesamiento del pago",
-      detalle: error.message
-    });
+    console.error("❌ Error en el proceso de pago:", error.response?.data || error.message);
+    return res.status(500).json({ error: "Error en el procesamiento del pago." });
   }
 };
 
