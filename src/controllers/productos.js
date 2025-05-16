@@ -170,6 +170,61 @@ const supabase = require('../config/supabase');
     };
   
 
+    const updateDiscount = async (req, res) => {
+    const { id } = req.params;
+    const { discount_value } = req.body;
+
+    try {
+        // Validación básica
+        if (typeof discount_value !== 'number' || discount_value < 0 || discount_value > 100) {
+            return res.status(400).json({ error: 'El descuento debe ser un número entre 0 y 100.' });
+        }
+
+        // Obtener producto actual
+        const { data: currentProduct, error: fetchError } = await supabase
+            .from('productos')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (fetchError) {
+            console.error('Error al obtener producto:', fetchError.message);
+            return res.status(404).json({ error: 'Producto no encontrado.' });
+        }
+
+        // Determinar estado del descuento
+        const discount = discount_value > 0;
+
+        // Actualizar solo campos relacionados con descuento
+        const { data: updatedProduct, error } = await supabase
+            .from('productos')
+            .update({
+                discount: discount,
+                discount_value: discount_value,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error al actualizar descuento:', error.message);
+            return res.status(500).json({ error: 'Error al actualizar el descuento.' });
+        }
+
+        res.status(200).json({
+            message: 'Descuento actualizado correctamente',
+            product: updatedProduct
+        });
+
+    } catch (error) {
+        console.error('Error general:', error.message);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+};
+
+
+
      const deleteProduct = async (req, res) => {
       const { id } = req.params;
     
@@ -199,7 +254,8 @@ module.exports = {
     getProductById,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    updateDiscount
 };
   
  
