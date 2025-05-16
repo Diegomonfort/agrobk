@@ -23,10 +23,12 @@ const RecibeInfoExpressCheckout = async (req, res) => {
   try {
     const { datosPersonales, direccionEnvio, products } = req.body;
 
-    if (!datosPersonales || !direccionEnvio || !products || !Array.isArray(products)) {
-      return res.status(400).json({ error: "Faltan datos requeridos o la estructura de datos es incorrecta." });
+    // Validación de datos básica
+    if (!datosPersonales || !direccionEnvio || !products) {
+      return res.status(400).json({ error: "Datos incompletos o estructura incorrecta." });
     }
-     // Obtener IDs de productos y cantidades
+
+    // Obtener IDs de productos y cantidades
     const productIds = products.map(p => p.id);
     const productQuantities = new Map(products.map(p => [p.id, p.quantity || 1]));
 
@@ -116,19 +118,21 @@ const RecibeInfoExpressCheckout = async (req, res) => {
           Type: 0,
         },
         PaymentData: {
-          ClientReferenceId: nuevaTransaccion.id.toString(),
+          ClientReferenceId: nuevaTransaccion.id.toString(), // Usamos el ID de la transacción
           CurrencyId: 2,
           FinancialInclusion: {
-            BilledAmount: totalCompra.toFixed(2),
+            BilledAmount: parseFloat(itemsArray.reduce((acc, item) => acc + item.Amount, 0).toFixed(2)),
             InvoiceNumber: 9869,
-            TaxedAmount: totalImpuestos,
+            TaxedAmount: parseFloat(itemsArray.reduce((acc, item) => acc + item.Amount * 0.9, 0).toFixed(1)),
             Type: 1,
           },
           Installments: 1,
           Items: itemsArray,
           OptionalCommerceId: 45274,
           PaymentInstrumentInput: {
-            NonStorableItems: { CVC: "123" },
+            NonStorableItems: {
+              CVC: "123",
+            },
             OptionalInstrumentFields: {
               ShippingAddress: direccionEnvio.direccion,
               ShippingZipCode: direccionEnvio.codigoPostal,
