@@ -5,9 +5,4 @@ const router = express.Router();
 
 router.post('/auth/login', loginAdmin);
 
-
-
-
-
-
 module.exports = router;
