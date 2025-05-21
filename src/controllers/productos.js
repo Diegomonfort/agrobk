@@ -87,7 +87,7 @@ const supabase = require('../config/supabase');
         const {
             Producto,
             Precio,
-            Descripción,
+            Descripcion,
             IVA,
             Familia,
             Subsección,
@@ -113,7 +113,7 @@ const supabase = require('../config/supabase');
             const updateData = {
                 ...(Producto && { Producto }),
                 ...(Precio && { Precio: parseFloat(Precio) }),
-                ...(Descripción && { Descripción }),
+                ...(Descripcion && { Descripcion }),
                 ...(IVA && { IVA: parseFloat(IVA) }),
                 ...(Familia && { Familia }),
                 ...(Subsección && { Subsección }),

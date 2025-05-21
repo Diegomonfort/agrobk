@@ -31,7 +31,7 @@ const RecibeInfoExpressCheckout = async (req, res) => {
     // Consultar los productos en Supabase
     const { data: productos, error } = await supabase
       .from("productos")
-      .select("id, Precio, Descripción, Producto, discount_value, discount")
+      .select("id, Precio, Descripcion, Producto, discount_value, discount")
       .in("id", productIds);
 
     if (error) {
