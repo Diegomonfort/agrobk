@@ -43,13 +43,17 @@ const updateCategory = async (req, res) => {
     const { id } = req.params;
     const {
         Nombre,
+        index,
+        active
     } = req.body;
 
     try {
-        // Prepara los datos para la actualización solo con los campos existentes
-        const updateData = {
-            ...(Nombre && { Nombre }),
-        };
+        // Prepara los datos para la actualización incluyendo también index y active
+        const updateData = {};
+
+        if (Nombre !== undefined) updateData.Nombre = Nombre;
+        if (index !== undefined) updateData.index = Number(index);  // Aseguramos que sea número
+        if (active !== undefined) updateData.active = active === 'true' || active === true;  // Convertimos string a boolean si es necesario
 
         // Si hay una nueva imagen, súbela a Supabase y agrégala a `updateData`
         if (req.file) {
@@ -68,7 +72,6 @@ const updateCategory = async (req, res) => {
                 return res.status(500).json({ error: 'Error al subir la imagen al bucket.' });
             }
 
-            // Obtén la URL pública de la imagen
             const { data: publicUrlData, error: publicUrlError } = supabase
                 .storage
                 .from('categoriesFotos')
@@ -79,11 +82,10 @@ const updateCategory = async (req, res) => {
                 return res.status(500).json({ error: 'Error al generar la URL pública de la imagen.' });
             }
 
-            // Agrega la URL de la imagen al objeto de datos a actualizar
             updateData.imagen = publicUrlData.publicUrl;
         }
 
-        // Actualiza el producto en la base de datos
+        // Actualiza en la base de datos
         const { data, error } = await supabase
             .from('categorias')
             .update(updateData)
