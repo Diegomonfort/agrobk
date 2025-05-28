@@ -50,10 +50,11 @@ const updateCategory = async (req, res) => {
     try {
         // Prepara los datos para la actualización incluyendo también index y active
         const updateData = {};
+        console.log(Nombre, index, active)
 
         if (Nombre !== undefined) updateData.Nombre = Nombre;
-        if (index !== undefined) updateData.index = Number(index);  // Aseguramos que sea número
-        if (active !== undefined) updateData.active = active === 'true' || active === true;  // Convertimos string a boolean si es necesario
+        if (index !== undefined) updateData.index = index;
+        if (active !== undefined) updateData.active = active;
 
         // Si hay una nueva imagen, súbela a Supabase y agrégala a `updateData`
         if (req.file) {
